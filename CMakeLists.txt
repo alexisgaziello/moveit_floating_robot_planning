@@ -3,11 +3,13 @@ project(moveit_floating_robot_planning)
 
 
 set(DEPENDENCIES
-  geometry_msgs
-  octomap_server
   roscpp
+  rviz
+  octomap_server
+  geometry_msgs
   visualization_msgs
   cmake_modules
+  moveit_ros_planning_interface
 )
 
 find_package(catkin REQUIRED COMPONENTS ${DEPENDENCIES})
@@ -71,9 +73,9 @@ set(UI_FILES
 set(SRC_FILES
   src/actions.cpp
   src/display_init.cpp
-  # src/motion_planning_unexmin_octomaps.cpp
-  # src/motion_planning_unexmin_XML.cpp
-  # src/plugin_init.cpp
+  src/octomaps.cpp
+  src/XML.cpp
+  src/plugin_init.cpp
 )
 
 set(HEADER_FILES

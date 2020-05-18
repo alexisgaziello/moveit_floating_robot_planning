@@ -90,20 +90,6 @@ void Display::removeOctomapButtonClicked()
   }
 }
 
-void Display::loadOctomapsTable()
-{
-  delete octomaps_model_;
-  octomaps_model_ = new QStandardItemModel(this);
-  octomaps_model_->setColumnCount(1);
-  octomaps_model_->setHorizontalHeaderLabels(QStringList() << "Octomaps:");
-  ui_->octomaps_table->setModel(octomaps_model_);
-  ui_->octomaps_table->setColumnWidth(0, ui_->octomaps_table->width());
-  connect(ui_->octomaps_table->selectionModel(),
-          SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-          this,
-          SLOT(octomapsTableSelectionChanged(const QItemSelection &, const QItemSelection &))
-          );
-}
 
 void Display::octomapsTableSelectionChanged(const QItemSelection & selected, const QItemSelection & deselected)
 {

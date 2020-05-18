@@ -6,7 +6,7 @@
 
 #include <QFileDialog>
 
-#include <rviz/display_context.h>
+#include <rviz/visualization_manager.h>
 #include <rviz/view_manager.h>
 #include <rviz/view_controller.h>
 
@@ -25,18 +25,17 @@ void Display::addActionButtonClicked()
 
 void Display::addAction(const ActionType & actionType)
 {
-  /*
+  
   // const robot_state::RobotStateConstPtr & robotState = planning_display_->getQueryGoalState();
   // const Eigen::Affine3d & end_effector_state = robotState->getGlobalLinkTransform("body");
+  // const Eigen::Affine3d & end_effector_state = planning_display_->getQueryGoalState()->getGlobalLinkTransform("body");
+  // Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
+  // end_effector_quaternion.normalize();
+
+  // TODO CONSIDER BINDING
   const Eigen::Affine3d & end_effector_state = planning_display_->getQueryGoalState()->getGlobalLinkTransform("body");
   Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
   end_effector_quaternion.normalize();
-
-  // ROS_INFO("x: %f", end_effector_quaternion.x());
-  // ROS_INFO("y: %f", end_effector_quaternion.y());
-  // ROS_INFO("z: %f", end_effector_quaternion.z());
-  // ROS_INFO("w: %f", end_effector_quaternion.w());
-  // Print end-effector pose. Remember that this is in the model frame 
 
   geometry_msgs::Pose pose;
   pose.position.x = end_effector_state(0,3);
@@ -47,8 +46,12 @@ void Display::addAction(const ActionType & actionType)
   pose.orientation.z = end_effector_quaternion.z();
   pose.orientation.w = end_effector_quaternion.w();
 
+  // const geometry_msgs::PoseStamped current_state = move_group.getPoseTarget(END_EFFECTOR_LINK);
+  // const geometry_msgs::Pose pose(current_state.pose);
+
+
   addAction(actionType, pose);
-  */
+  
 }
 
 void Display::addAction(const ActionType & actionType, const double & x, const double & y, const double & z)
@@ -65,7 +68,7 @@ void Display::addAction(const ActionType & actionType, const double & x, const d
 }
 
 //Creates all types of "Markers/actions"
-void Display::addAction(const ActionType & actionType, geometry_msgs::Pose & pose)
+void Display::addAction(const ActionType & actionType, const geometry_msgs::Pose & pose)
 {
   Action action(actionType);
 
@@ -161,20 +164,6 @@ void Display::actionTableSelectionChanged(const QItemSelection & selected, const
   }
 }
 
-void Display::loadActionsTable()
-{
-  delete actions_model_;
-  actions_model_ = new QStandardItemModel(this);
-  actions_model_->setColumnCount(1);
-  actions_model_->setHorizontalHeaderLabels(QStringList() << "Actions");
-  ui_->actions_table->setModel(actions_model_);
-  ui_->actions_table->setColumnWidth(0, ui_->actions_table->width());
-  connect(ui_->actions_table->selectionModel(),
-          SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-          this,
-          SLOT(actionTableSelectionChanged(const QItemSelection &, const QItemSelection &))
-          );
-}
 
 void Display::appendToTable(const std::string & str, QStandardItemModel * model)
 {
@@ -459,18 +448,17 @@ int Display::getTypeOfAction(const std::string & typeDescription){
 // Center interface
 void Display::centerUIToAction(const Action & action)
 {
-  // context_->getViewManager()->getCurrent()->lookAt(action.marker.pose.position.x
-  //                       , action.marker.pose.position.y
-  //                       , action.marker.pose.position.z
-  //                     );
-  // TODO
+  vis_manager_->getViewManager()->getCurrent()->lookAt(action.marker.pose.position.x
+                        , action.marker.pose.position.y
+                        , action.marker.pose.position.z
+                      );
 
 }
 
 void Display::centerToRobotClicked()
 {
   // const Eigen::Affine3d & end_effector_state = planning_display_->getQueryGoalState()->getGlobalLinkTransform("body");
-  // context_->getViewManager()->getCurrent()->lookAt(end_effector_state(0,3)
+  // vis_manager_->getViewManager()->getCurrent()->lookAt(end_effector_state(0,3)
   //                       , end_effector_state(1,3)
   //                       , end_effector_state(2,3)
   //                     );
