@@ -31,7 +31,10 @@ Display::Display(QWidget* parent)
 {
   ui_->setupUi(this);
 
-  planning_display_ = context_->getWindowManager()->getParentWindow();
+  ROS_INFO_NAMED("tutorial", "End effector link: %s", move_group.getEndEffectorLink().c_str());
+  // ROS_INFO_NAMED("tutorial", "Available Planning Groups:");
+  // std::copy(move_group.getJointModelGroupNames().begin(), move_group.getJointModelGroupNames().end(),
+  //         std::ostream_iterator<std::string>(std::cout, ", "));
 
   const std::vector< std::string > a = move_group.getLinkNames();
   for (int i=0;i<a.size();i++){
@@ -189,8 +192,8 @@ Display::Display(QWidget* parent)
 
 Display::~Display(){
   delete ui_;
-  // delete actions_model_;
-  // delete octomaps_model_;
+  delete actions_model_;
+  delete octomaps_model_;
 }
 
 
@@ -199,14 +202,14 @@ Display::~Display(){
 // on the parent class so the class id and panel name get saved.
 void Display::save( rviz::Config config ) const
 {
-  // rviz::Panel::save( config );
+  rviz::Panel::save( config );
   // config.mapSetValue( "Topic", output_topic_ );
 }
 
 // Load all configuration data for this panel from the given Config object.
 void Display::load( const rviz::Config& config )
 {
-  // rviz::Panel::load( config );
+  rviz::Panel::load( config );
   // QString topic;
   // if( config.mapGetString( "Topic", &topic ))
   // {

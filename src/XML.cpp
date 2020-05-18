@@ -9,6 +9,8 @@
 #include <rviz/visualization_manager.h>
 #include <rviz/view_manager.h>
 #include <rviz/view_controller.h>
+#include <rviz/window_manager_interface.h>
+
 
 #include <tinyxml.h>
 
@@ -33,18 +35,28 @@ void Display::addAction(const ActionType & actionType)
   // end_effector_quaternion.normalize();
 
   // TODO CONSIDER BINDING
-  const Eigen::Affine3d & end_effector_state = planning_display_->getQueryGoalState()->getGlobalLinkTransform("body");
-  Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
-  end_effector_quaternion.normalize();
+  // moveit::core::RobotStatePtr robotState = move_group.getCurrentState();
+  // if (robotState == nullptr){
+  //   ROS_ERROR("Could not get robot position from moveit. Cannot add actions.");
+  // }
+  // const Eigen::Affine3d & end_effector_state = robotState->getGlobalLinkTransform("body");
+  // Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
+  // end_effector_quaternion.normalize();
+  geometry_msgs::Pose pose = move_group.getCurrentPose().pose;
 
-  geometry_msgs::Pose pose;
-  pose.position.x = end_effector_state(0,3);
-  pose.position.y = end_effector_state(1,3);
-  pose.position.z = end_effector_state(2,3);
-  pose.orientation.x = end_effector_quaternion.x();
-  pose.orientation.y = end_effector_quaternion.y();
-  pose.orientation.z = end_effector_quaternion.z();
-  pose.orientation.w = end_effector_quaternion.w();
+  "/rviz_moveit_motion_planng_display/robot_interaction_interactive_marker_topic/update_full"
+
+  "JJ:start_body"
+  "JJ:goal_body"
+
+  // geometry_msgs::Pose pose;
+  // pose.position.x = end_effector_state(0,3);
+  // pose.position.y = end_effector_state(1,3);
+  // pose.position.z = end_effector_state(2,3);
+  // pose.orientation.x = end_effector_quaternion.x();
+  // pose.orientation.y = end_effector_quaternion.y();
+  // pose.orientation.z = end_effector_quaternion.z();
+  // pose.orientation.w = end_effector_quaternion.w();
 
   // const geometry_msgs::PoseStamped current_state = move_group.getPoseTarget(END_EFFECTOR_LINK);
   // const geometry_msgs::Pose pose(current_state.pose);

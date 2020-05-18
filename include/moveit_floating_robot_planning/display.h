@@ -103,7 +103,7 @@ private:
   const std::string PLANNING_GROUP = "robot_movegroup";
   const std::string TARGET_LINK = "body";
   moveit::planning_interface::MoveGroupInterface move_group;
-  MotionPlanningDisplay* planning_display_;
+  // MotionPlanningDisplay* planning_display_;
 
   // Initialization
   void loadActionTypes(const std::string &, const bool & append = true);
