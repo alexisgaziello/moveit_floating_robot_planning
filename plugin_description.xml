@@ -1,0 +1,12 @@
+<library path="lib/libmoveit_floating_robot_planning">
+  <class 
+    name="moveit_floating_robot_planning/MoveItFloatingRobotPlanning"
+    type="moveit_floating_robot_planning::Display"
+    base_class_type="rviz::Panel"
+  >
+    <description>
+      A panel widget to plan missions for floating robots.
+    </description>
+  </class>
+</library>
+
