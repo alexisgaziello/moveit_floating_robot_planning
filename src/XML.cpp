@@ -11,6 +11,8 @@
 #include <rviz/view_controller.h>
 #include <rviz/window_manager_interface.h>
 
+#include <topic_tools/shape_shifter.h>
+#include <visualization_msgs/InteractiveMarkerInit.h>
 
 #include <tinyxml.h>
 
@@ -42,12 +44,7 @@ void Display::addAction(const ActionType & actionType)
   // const Eigen::Affine3d & end_effector_state = robotState->getGlobalLinkTransform("body");
   // Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
   // end_effector_quaternion.normalize();
-  geometry_msgs::Pose pose = move_group.getCurrentPose().pose;
-
-  "/rviz_moveit_motion_planng_display/robot_interaction_interactive_marker_topic/update_full"
-
-  "JJ:start_body"
-  "JJ:goal_body"
+  // geometry_msgs::Pose pose = move_group.getCurrentPose().pose;
 
   // geometry_msgs::Pose pose;
   // pose.position.x = end_effector_state(0,3);
@@ -60,11 +57,70 @@ void Display::addAction(const ActionType & actionType)
 
   // const geometry_msgs::PoseStamped current_state = move_group.getPoseTarget(END_EFFECTOR_LINK);
   // const geometry_msgs::Pose pose(current_state.pose);
+    
+  // goalPositionSubscriber = nh_.subscribe<topic_tools::ShapeShifter>("/rviz_moveit_motion_planning_display/robot_interaction_interactive_marker_topic/update_full"
+  // ,1 , &Display::goalPositionCallback, this);
 
 
-  addAction(actionType, pose);
-  
+  addAction(actionType, getRobotPosition());
+
 }
+
+geometry_msgs::Pose Display::getRobotPosition(){
+
+  geometry_msgs::Pose pose; 
+
+  const topic_tools::ShapeShifter::ConstPtr & msg = ros::topic::waitForMessage<topic_tools::ShapeShifter>(
+      "/rviz_moveit_motion_planning_display/robot_interaction_interactive_marker_topic/update_full"
+      , nh_);
+
+  if (msg->getDataType() == ros::message_traits::datatype<visualization_msgs::InteractiveMarkerInit>()) {
+    const visualization_msgs::InteractiveMarkerInit::ConstPtr & markersInit = msg->instantiate<visualization_msgs::InteractiveMarkerInit>();
+    
+    for(size_t i = 0; i < markersInit->markers.size(); ++i) {
+              
+      if (markersInit->markers.at(i).name.compare("JJ:goal_body") == 0){ // JJ:start_body for starting position
+        pose.position.x = markersInit->markers.at(i).pose.position.x;
+        pose.position.y = markersInit->markers.at(i).pose.position.y;
+        pose.position.z = markersInit->markers.at(i).pose.position.z;
+        pose.orientation.x = markersInit->markers.at(i).pose.orientation.x;
+        pose.orientation.y = markersInit->markers.at(i).pose.orientation.y;
+        pose.orientation.z = markersInit->markers.at(i).pose.orientation.z;
+        pose.orientation.w = markersInit->markers.at(i).pose.orientation.w;
+      }
+    }
+  } else {
+    ROS_ERROR("Unknown message type (%s) for goal position topic. Should be visualization_msgs/InteractiveMarkerInit.", msg->getDataType().c_str());
+  }  
+
+  return pose;
+}
+
+// void Display::goalPositionCallback(const topic_tools::ShapeShifter::ConstPtr& msg)
+// {
+//   if (msg->getDataType() == ros::message_traits::datatype<visualization_msgs::InteractiveMarkerInit>()) {
+//     visualization_msgs::InteractiveMarkerInit * markersInit = msg->instantiate<visualization_msgs::InteractiveMarkerInit>().get();
+    
+//     for(size_t i = 0; i < markersInit->markers.size(); ++i) {
+
+//     // for(auto && marker : markersInit->markers){
+//       // if (marker.ns.compare("JJ:start_body")){
+        
+//       // }
+              
+//       ROS_ERROR("new marker");
+//       //if (markersInit->markers.at(i).name.compare("JJ:goal_body")){
+//         ROS_ERROR("NEW POSE");
+//         // lastGoalPose = markersInit->markers.at(i).pose;
+//     // }
+//     }
+//   }
+//   else
+//   {
+//     ROS_ERROR("Unknown message type (%s) for goal position topic. Should be visualization_msgs/InteractiveMarkerInit.", msg->getDataType().c_str());
+//   }
+// }
+
 
 void Display::addAction(const ActionType & actionType, const double & x, const double & y, const double & z)
 {
@@ -460,21 +516,21 @@ int Display::getTypeOfAction(const std::string & typeDescription){
 // Center interface
 void Display::centerUIToAction(const Action & action)
 {
-  vis_manager_->getViewManager()->getCurrent()->lookAt(action.marker.pose.position.x
-                        , action.marker.pose.position.y
-                        , action.marker.pose.position.z
-                      );
-
+  vis_manager_->getViewManager()->getCurrent()->lookAt(
+      action.marker.pose.position.x
+    , action.marker.pose.position.y
+    , action.marker.pose.position.z
+  );
 }
 
 void Display::centerToRobotClicked()
 {
-  // const Eigen::Affine3d & end_effector_state = planning_display_->getQueryGoalState()->getGlobalLinkTransform("body");
-  // vis_manager_->getViewManager()->getCurrent()->lookAt(end_effector_state(0,3)
-  //                       , end_effector_state(1,3)
-  //                       , end_effector_state(2,3)
-  //                     );
-  // TODO
+  geometry_msgs::Pose pose = getRobotPosition();
+  vis_manager_->getViewManager()->getCurrent()->lookAt(
+      pose.position.x
+    , pose.position.y
+    , pose.position.z
+  );
 }
 
 void Display::centerUIToSelectedAction()

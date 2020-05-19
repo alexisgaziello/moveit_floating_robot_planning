@@ -31,11 +31,6 @@ Display::Display(QWidget* parent)
 {
   ui_->setupUi(this);
 
-  ROS_INFO_NAMED("tutorial", "End effector link: %s", move_group.getEndEffectorLink().c_str());
-  // ROS_INFO_NAMED("tutorial", "Available Planning Groups:");
-  // std::copy(move_group.getJointModelGroupNames().begin(), move_group.getJointModelGroupNames().end(),
-  //         std::ostream_iterator<std::string>(std::cout, ", "));
-
   const std::vector< std::string > a = move_group.getLinkNames();
   for (int i=0;i<a.size();i++){
     ROS_ERROR("%s", a[i].c_str());
@@ -217,6 +212,7 @@ void Display::load( const rviz::Config& config )
   //   updateTopic();
   // }
 }
+
 
 
 void Display::loadActionTypes(const std::string & pathToActionsDefinition,  const bool & append){

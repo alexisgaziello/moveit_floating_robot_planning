@@ -99,16 +99,24 @@ private:
   std::vector<ActionType> actionTypes;
   std::vector<Action> actions_;
 
+  geometry_msgs::Pose lastGoalPose;
+  bool wantGoalPosition = false;
+
   // MoveIt!
   const std::string PLANNING_GROUP = "robot_movegroup";
   const std::string TARGET_LINK = "body";
   moveit::planning_interface::MoveGroupInterface move_group;
-  // MotionPlanningDisplay* planning_display_;
+
+  // ros::Subscriber goalPositionSubscriber;
+  // void goalPositionCallback(const topic_tools::ShapeShifter::ConstPtr& msg);
+
 
   // Initialization
   void loadActionTypes(const std::string &, const bool & append = true);
 
   // XML tab
+  geometry_msgs::Pose getRobotPosition();
+
   std::string missionSavePath;
   std::string missionAppendPath;
 
