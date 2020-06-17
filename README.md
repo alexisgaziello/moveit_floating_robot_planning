@@ -12,4 +12,4 @@ roslaunch moveit_unexmin_config demo.launch
 
 5. Add visualization -> marker -> select topic: action_markers
 
-5 for octomaps: add pointcloud2 or markerarray -> select topic: octomap_XXX
+6. For octomaps: add pointcloud2 or markerarray -> select topic: octomap_XXX
