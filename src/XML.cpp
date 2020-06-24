@@ -28,39 +28,13 @@ void Display::addActionButtonClicked(){
 
   //addBackgroundJob(boost::bind(&Display::plan, this), "plan");
 }
-void Display::plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal)
+void Display::plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal, bool CREATE_TRAJECTORY)
 {
-  spinner.start();
   
-  // MoveIt! operates on sets of joints called "planning groups" and stores them in an object called
-  // the `JointModelGroup`. Throughout MoveIt! the terms "planning group" and "joint model group"
-  // BASE_LINK used interchangably.
-  
-  moveit::planning_interface::MoveGroupInterface * move_group;
-  try {
-    move_group = new moveit::planning_interface::MoveGroupInterface(robot_group);
-  } catch (std::exception& ex) {
-    ROS_ERROR("%s", ex.what());
-    return;
-  }
-
-  // Set workspace
-  move_group->setWorkspace(-10, -10, -10, 10, 10, 10);
-
-
-  // We will use the :planning_scene_interface:`PlanningSceneInterface`
-  // class to add and remove collision objects in our "virtual world" scene
-  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-
   // Raw pointers are frequently used to refer to the planning group for improved performance.
   const robot_state::JointModelGroup* joint_model_group =
       move_group->getCurrentState()->getJointModelGroup(robot_group);
 
-  // The package MoveItVisualTools provides many capabilties for visualizing objects, robots,
-  // and trajectories in RViz as well as debugging tools such as step-by-step introspection of a script
-  // namespace rvt = rviz_visual_tools;
-  // moveit_visual_tools::MoveItVisualTools visual_tools(base_link);
-  // visual_tools.deleteAllMarkers();
 
   // START POSITION
   robot_state::RobotState start_state(*move_group->getCurrentState());
@@ -90,10 +64,6 @@ void Display::plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal)
   joint_group_goal[5] = goal.orientation.z;
   joint_group_goal[6] = goal.orientation.w;
 
-  for (int i=0;i<joint_group_goal.size();i++){
-    ROS_INFO("%f", joint_group_goal[i]);
-  }
-
   move_group->setJointValueTarget(joint_group_goal);
 
   // Now, we call the planner to compute the plan and visualize it.
@@ -109,31 +79,48 @@ void Display::plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal)
     return;
   }
 
-  moveit_msgs::RobotTrajectory trajectory = my_plan.trajectory_;
-  for (int i=0;i<trajectory.multi_dof_joint_trajectory.joint_names.size();i++){
-    ROS_INFO("%s", trajectory.multi_dof_joint_trajectory.joint_names[i].c_str());
-  }
-  for (int i=0;i<trajectory.multi_dof_joint_trajectory.points.size();i++){
-    ROS_INFO("Point: %d", i);
-    for (int j=0;j<trajectory.multi_dof_joint_trajectory.points[i].transforms.size();j++){
-      ROS_INFO("x: %f", trajectory.multi_dof_joint_trajectory.points[i].transforms[j].translation.x);
-      ROS_INFO("y: %f", trajectory.multi_dof_joint_trajectory.points[i].transforms[j].translation.y);
-      ROS_INFO("z: %f", trajectory.multi_dof_joint_trajectory.points[i].transforms[j].translation.z);
-    }
-  }
+  if (CREATE_TRAJECTORY){
+    plan_ = moveit_msgs::DisplayTrajectory();
+    plan_.trajectory_start = moveit_msgs::RobotState(my_plan.start_state_);
+  } 
 
+  plan_.trajectory.push_back(my_plan.trajectory_);
   
+
 }
 
 
 void Display::generateIntermediateWaypoints(){
-  if (actions_.size() < 2){
-    ROS_ERROR("NOT ENOUGH MARFKERS");
+  spinner.start();
+
+  try {
+    move_group = new moveit::planning_interface::MoveGroupInterface(robot_group);
+  } catch (std::exception& ex) {
+    ROS_ERROR("%s", ex.what());
+    return;
   }
-  ROS_INFO("Planning between waypoints");
-  plan(actions_[0].marker.pose, actions_[1].marker.pose);
+
+  // Set workspace
+  move_group->setWorkspace(-100, -100, -100, 100, 100, 100);
+
+
+
+  //trajectories_.clear();
+  if (actions_.size() < 2){
+    ROS_ERROR("To compute a trajectory, at least two actions must be defined.");
+  }
+  for (int i=1; i<actions_.size();i++){
+    plan(actions_[i-1].marker.pose, actions_[i].marker.pose, i==1);
+  }
+
   // std::thread t2(plan);
   // t2.join();
+  trajectory_pub.publish(plan_);
+
+  delete move_group;
+
+  spinner.stop();
+
 }
 
   // const robot_state::RobotStateConstPtr & robotState = planning_display_->getQueryGoalState();
@@ -395,9 +382,17 @@ bool Display::loadXMLMissionFile(const QString & filePath)
               bool foundError = false;
               const char * description = pAction->Attribute("description");
               int actionTypeIndex = 0;
+
+              // Ignore generated waypoints
+              if(strcmp(description, "GENERATED_WAYPOINT") == 0){
+                pAction = pAction->NextSiblingElement(str_task);
+                continue;
+              }
+
               if (description) {
                 const std::string str_description(description);
                 actionTypeIndex = getTypeOfAction(str_description);
+                
               } else {
                 ROS_ERROR("Could not get description of action from action number %d of XML file.\nSetting to default: '%s'.\nBe careful: parameters will be lost.", i, ActionType(actionTypes[0]).name.c_str());
               }
@@ -511,6 +506,17 @@ void Display::exportXMLButtonClicked()
       stream << "      <" << name.toStdString() << ">" << value.toStdString() << "</" << name.toStdString() << ">\n";
     }
     stream << "  </task>\n";
+
+    // Intermediate waypoints
+    for (int j=0; j<plan_.trajectory[i].multi_dof_joint_trajectory.points.size(); j++){
+      stream << "	 <task description=\"GENERATED_WAYPOINT\">\n";
+      stream << "    <point>\n";
+      stream << "      <x>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.x) << "</x>\n";
+      stream << "      <y>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.y) << "</y>\n";
+      stream << "      <z>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.z) << "</z>\n";
+      stream << "    </point>\n";
+      stream << "  </task>\n";
+    }
   }
 
   // Add any other text from append.xml

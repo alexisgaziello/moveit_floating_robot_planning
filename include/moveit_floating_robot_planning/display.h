@@ -112,24 +112,17 @@ private:
 
   ros::NodeHandle nh_;
 
+  moveit::planning_interface::MoveGroupInterface * move_group;
+  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+
 
   std::vector<ActionType> actionTypes;
   std::vector<Action> actions_;
+  moveit_msgs::DisplayTrajectory plan_;
 
-void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal);
+void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal, bool CREATE_TRAJECTORY=false);
 
-  // MotionPlanningDisplay* planning_display_;
 
-  // moveit::planning_interface::MoveGroupInterfacePtr move_group_;
-  // moveit::planning_interface::PlanningSceneInterfacePtr planning_scene_interface_;
-  // moveit::semantic_world::SemanticWorldPtr semantic_world_;
-
-  // MoveIt!
-  // const std::string PLANNING_GROUP = "robot_movegroup";
-  // const std::string TARGET_LINK = "body";
-
-  // ros::Subscriber goalPositionSubscriber;
-  // void goalPositionCallback(const topic_tools::ShapeShifter::ConstPtr& msg);
   ros::AsyncSpinner spinner;
 
   // Initialization
@@ -156,6 +149,8 @@ void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal);
 
   std::string actionsPublisher_publishTopic_;
   ros::Publisher actionsPublisher_adv_;
+  ros::Publisher trajectory_pub;
+
 
   void publishAction(const Action &);
 

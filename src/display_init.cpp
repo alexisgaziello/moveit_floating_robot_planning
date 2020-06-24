@@ -28,6 +28,7 @@ Display::Display(QWidget* parent)
   , octomaps_model_(new QStandardItemModel(this))
   , centeredActionID_(-1)
   , spinner(1)
+  , move_group(nullptr)
 {
   ui_->setupUi(this);
   
@@ -137,10 +138,17 @@ Display::Display(QWidget* parent)
           );
 
   
+  const std::string trajectory_topic_param = "display_trajectory_topic";
+  std::string trajectory_topic = "move_group/display_planned_path";
+  if (!nh_.getParam(trajectory_topic_param, trajectory_topic))
+  {
+    ROS_INFO("Could not get param '%s'. Taking default value as '%s'.", trajectory_topic_param.c_str(), trajectory_topic.c_str());
+  }
 
-  // Octomap server
   actionsPublisher_adv_ = nh_.advertise<visualization_msgs::Marker>(actionsPublisher_publishTopic_, 1000);
+  trajectory_pub = nh_.advertise<moveit_msgs::DisplayTrajectory>(trajectory_topic, 10);
   octomapServer_ = new octomap_server::OctomapServer(nh_);
+
 
   // Load all octomaps from resources/octomaps/
   std::string pathToOctomaps = workspacePath_ + "resources/octomaps/";
