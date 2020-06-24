@@ -116,7 +116,7 @@ private:
   std::vector<ActionType> actionTypes;
   std::vector<Action> actions_;
 
-  void plan();
+void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal);
 
   // MotionPlanningDisplay* planning_display_;
 

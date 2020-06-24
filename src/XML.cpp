@@ -28,7 +28,7 @@ void Display::addActionButtonClicked(){
 
   //addBackgroundJob(boost::bind(&Display::plan, this), "plan");
 }
-void Display::plan()
+void Display::plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal)
 {
   spinner.start();
   
@@ -45,7 +45,7 @@ void Display::plan()
   }
 
   // Set workspace
-  // move_group->setWorkspace()
+  move_group->setWorkspace(-10, -10, -10, 10, 10, 10);
 
 
   // We will use the :planning_scene_interface:`PlanningSceneInterface`
@@ -66,13 +66,14 @@ void Display::plan()
   robot_state::RobotState start_state(*move_group->getCurrentState());
   std::vector<double> joint_group_start(7);
 
-  joint_group_start[0] = 0;
-  joint_group_start[1] = 0.5;
-  joint_group_start[2] = 0.5;
-  joint_group_start[3] = 0;
-  joint_group_start[4] = 0;
-  joint_group_start[5] = 0;
-  joint_group_start[6] = 1;
+  joint_group_start[0] = start.position.x;
+  joint_group_start[1] = start.position.y;
+  joint_group_start[2] = start.position.z;
+  joint_group_start[3] = start.orientation.x;
+  joint_group_start[4] = start.orientation.y;
+  joint_group_start[5] = start.orientation.z;
+  joint_group_start[6] = start.orientation.w;
+
   start_state.setJointGroupPositions(robot_group, joint_group_start);
   move_group->setStartState(start_state);
 
@@ -81,15 +82,13 @@ void Display::plan()
   std::vector<double> joint_group_goal;
   current_state->copyJointGroupPositions(joint_model_group, joint_group_goal);
 
-  geometry_msgs::Pose pose = getRobotPosition();
-
-  joint_group_goal[0] = pose.position.x;
-  joint_group_goal[1] = pose.position.y;
-  joint_group_goal[2] = pose.position.z;
-  joint_group_goal[3] = pose.orientation.x;
-  joint_group_goal[4] = pose.orientation.y;
-  joint_group_goal[5] = pose.orientation.z;
-  joint_group_goal[6] = pose.orientation.w;
+  joint_group_goal[0] = goal.position.x;
+  joint_group_goal[1] = goal.position.y;
+  joint_group_goal[2] = goal.position.z;
+  joint_group_goal[3] = goal.orientation.x;
+  joint_group_goal[4] = goal.orientation.y;
+  joint_group_goal[5] = goal.orientation.z;
+  joint_group_goal[6] = goal.orientation.w;
 
   for (int i=0;i<joint_group_goal.size();i++){
     ROS_INFO("%f", joint_group_goal[i]);
@@ -106,7 +105,8 @@ void Display::plan()
   success = (move_group->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
 
   if (!success){
-    ROS_ERROR("Some error between x and y");
+    ROS_ERROR("An error occured while planning.");
+    return;
   }
 
   moveit_msgs::RobotTrajectory trajectory = my_plan.trajectory_;
@@ -127,7 +127,11 @@ void Display::plan()
 
 
 void Display::generateIntermediateWaypoints(){
-  plan();
+  if (actions_.size() < 2){
+    ROS_ERROR("NOT ENOUGH MARFKERS");
+  }
+  ROS_INFO("Planning between waypoints");
+  plan(actions_[0].marker.pose, actions_[1].marker.pose);
   // std::thread t2(plan);
   // t2.join();
 }
