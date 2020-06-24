@@ -24,21 +24,19 @@ namespace moveit_floating_robot_planning
 Display::Display(QWidget* parent)
   : rviz::Panel( parent )
   , ui_(new Ui::FloatingRobotPlanningUI())
-  , move_group(PLANNING_GROUP)
   , actions_model_(new QStandardItemModel(this))
   , octomaps_model_(new QStandardItemModel(this))
   , centeredActionID_(-1)
+  , spinner(1)
 {
   ui_->setupUi(this);
-
-  const std::vector< std::string > a = move_group.getLinkNames();
-  for (int i=0;i<a.size();i++){
-    ROS_ERROR("%s", a[i].c_str());
-  }
+  
+ 
 
    // UNEXMIN
   connect(ui_->add_action_button, SIGNAL(clicked()), this, SLOT(addActionButtonClicked()));
   connect(ui_->remove_action_button, SIGNAL(clicked()), this, SLOT(removeActionButtonClicked()));
+  connect(ui_->intermediate_waypoints_button, SIGNAL(clicked()), this, SLOT(generateIntermediateWaypoints()));
   connect(ui_->import_xml_button, SIGNAL(clicked()), this, SLOT(importXMLButtonClicked()));
   connect(ui_->export_xml_button, SIGNAL(clicked()), this, SLOT(exportXMLButtonClicked()));
   connect(ui_->center_to_robot, SIGNAL(clicked()), this, SLOT(centerToRobotClicked()));
@@ -92,6 +90,20 @@ Display::Display(QWidget* parent)
   {
     missionAppendPath = "";
     ROS_INFO("Could not get param '%s'. Information will be appended if found in the 'resources/append.xml' file.", mission_append_param.c_str());
+  }
+
+  const std::string base_link_param = "base_link";
+  if (!nh_.getParam(base_link_param, base_link))
+  {
+    base_link = "body";
+    ROS_INFO("Could not get param '%s'. Taking default value as '%s'.", base_link_param.c_str(), base_link.c_str());
+  }
+
+  const std::string robot_group_param = "planning_group";
+  if (!nh_.getParam(robot_group_param, robot_group))
+  {
+    robot_group = "robot_group";
+    ROS_INFO("Could not get param '%s'. Taking default value as '%s'.", robot_group_param.c_str(), robot_group.c_str());
   }
 
   // const std::string param_markerArrayTopic = "publish_topic_markersArray";

@@ -61,6 +61,13 @@
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="intermediate_waypoints_button">
+             <property name="text">
+              <string>Generate intermediate waypoints</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_16">
              <item>
               <spacer name="horizontalSpacer_7">

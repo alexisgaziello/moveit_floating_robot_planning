@@ -54,6 +54,7 @@
   <depend>visualization_msgs</depend>
   <depend>octomap_server</depend>
   <depend>moveit_ros_planning_interface</depend>
+  <depend>moveit_visual_tools</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

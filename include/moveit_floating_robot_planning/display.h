@@ -24,6 +24,17 @@
 
 // MoveIt
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+
+#include <moveit_msgs/DisplayRobotState.h>
+#include <moveit_msgs/DisplayTrajectory.h>
+
+#include <moveit_msgs/AttachedCollisionObject.h>
+#include <moveit_msgs/CollisionObject.h>
+
+#include <moveit_visual_tools/moveit_visual_tools.h>
+
+#include <moveit/background_processing/background_processing.h>
 
 
 // #include <QTreeWidgetItem>
@@ -70,7 +81,11 @@ public:
   virtual void save( rviz::Config config ) const;
 
   Ui::FloatingRobotPlanningUI* ui_;
+  
 
+protected:
+
+  moveit::tools::BackgroundProcessing background_process_;
 
 private Q_SLOTS:
 
@@ -80,6 +95,7 @@ private Q_SLOTS:
   // XML Generation Tab
   void addActionButtonClicked();
   void removeActionButtonClicked();
+  void generateIntermediateWaypoints();
   void importXMLButtonClicked();
   void exportXMLButtonClicked();
   void centerToRobotClicked();
@@ -96,20 +112,25 @@ private:
 
   ros::NodeHandle nh_;
 
+
   std::vector<ActionType> actionTypes;
   std::vector<Action> actions_;
 
-  geometry_msgs::Pose lastGoalPose;
-  bool wantGoalPosition = false;
+  void plan();
+
+  // MotionPlanningDisplay* planning_display_;
+
+  // moveit::planning_interface::MoveGroupInterfacePtr move_group_;
+  // moveit::planning_interface::PlanningSceneInterfacePtr planning_scene_interface_;
+  // moveit::semantic_world::SemanticWorldPtr semantic_world_;
 
   // MoveIt!
-  const std::string PLANNING_GROUP = "robot_movegroup";
-  const std::string TARGET_LINK = "body";
-  moveit::planning_interface::MoveGroupInterface move_group;
+  // const std::string PLANNING_GROUP = "robot_movegroup";
+  // const std::string TARGET_LINK = "body";
 
   // ros::Subscriber goalPositionSubscriber;
   // void goalPositionCallback(const topic_tools::ShapeShifter::ConstPtr& msg);
-
+  ros::AsyncSpinner spinner;
 
   // Initialization
   void loadActionTypes(const std::string &, const bool & append = true);
@@ -152,6 +173,8 @@ private:
   std::string workspacePath_;
   std::string worldFrame_;
   float markerSize_;
+  std::string base_link;
+  std::string robot_group;
 
   static const int8_t DESCRIPTIONS_SIZE;
   static const std::string DESCRIPTIONS[];

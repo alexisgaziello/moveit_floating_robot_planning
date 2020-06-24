@@ -20,16 +20,118 @@ namespace moveit_floating_robot_planning
 {
 // XML Generation Tab
 
-void Display::addActionButtonClicked()
-{
+
+void Display::addActionButtonClicked(){
   // Get action from selected option
   const int index = ui_->action_type_combo_box->currentIndex();
   addAction(actionTypes[index]);
+
+  //addBackgroundJob(boost::bind(&Display::plan, this), "plan");
+}
+void Display::plan()
+{
+  spinner.start();
+  
+  // MoveIt! operates on sets of joints called "planning groups" and stores them in an object called
+  // the `JointModelGroup`. Throughout MoveIt! the terms "planning group" and "joint model group"
+  // BASE_LINK used interchangably.
+  
+  moveit::planning_interface::MoveGroupInterface * move_group;
+  try {
+    move_group = new moveit::planning_interface::MoveGroupInterface(robot_group);
+  } catch (std::exception& ex) {
+    ROS_ERROR("%s", ex.what());
+    return;
+  }
+
+  // Set workspace
+  // move_group->setWorkspace()
+
+
+  // We will use the :planning_scene_interface:`PlanningSceneInterface`
+  // class to add and remove collision objects in our "virtual world" scene
+  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+
+  // Raw pointers are frequently used to refer to the planning group for improved performance.
+  const robot_state::JointModelGroup* joint_model_group =
+      move_group->getCurrentState()->getJointModelGroup(robot_group);
+
+  // The package MoveItVisualTools provides many capabilties for visualizing objects, robots,
+  // and trajectories in RViz as well as debugging tools such as step-by-step introspection of a script
+  // namespace rvt = rviz_visual_tools;
+  // moveit_visual_tools::MoveItVisualTools visual_tools(base_link);
+  // visual_tools.deleteAllMarkers();
+
+  // START POSITION
+  robot_state::RobotState start_state(*move_group->getCurrentState());
+  std::vector<double> joint_group_start(7);
+
+  joint_group_start[0] = 0;
+  joint_group_start[1] = 0.5;
+  joint_group_start[2] = 0.5;
+  joint_group_start[3] = 0;
+  joint_group_start[4] = 0;
+  joint_group_start[5] = 0;
+  joint_group_start[6] = 1;
+  start_state.setJointGroupPositions(robot_group, joint_group_start);
+  move_group->setStartState(start_state);
+
+  // GOAL POSITION
+  robot_state::RobotStatePtr current_state = move_group->getCurrentState();
+  std::vector<double> joint_group_goal;
+  current_state->copyJointGroupPositions(joint_model_group, joint_group_goal);
+
+  geometry_msgs::Pose pose = getRobotPosition();
+
+  joint_group_goal[0] = pose.position.x;
+  joint_group_goal[1] = pose.position.y;
+  joint_group_goal[2] = pose.position.z;
+  joint_group_goal[3] = pose.orientation.x;
+  joint_group_goal[4] = pose.orientation.y;
+  joint_group_goal[5] = pose.orientation.z;
+  joint_group_goal[6] = pose.orientation.w;
+
+  for (int i=0;i<joint_group_goal.size();i++){
+    ROS_INFO("%f", joint_group_goal[i]);
+  }
+
+  move_group->setJointValueTarget(joint_group_goal);
+
+  // Now, we call the planner to compute the plan and visualize it.
+  // Note that we are just planning, not asking move_group
+  // to actually move the robot.
+  moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+
+  bool success;
+  success = (move_group->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
+  if (!success){
+    ROS_ERROR("Some error between x and y");
+  }
+
+  moveit_msgs::RobotTrajectory trajectory = my_plan.trajectory_;
+  for (int i=0;i<trajectory.multi_dof_joint_trajectory.joint_names.size();i++){
+    ROS_INFO("%s", trajectory.multi_dof_joint_trajectory.joint_names[i].c_str());
+  }
+  for (int i=0;i<trajectory.multi_dof_joint_trajectory.points.size();i++){
+    ROS_INFO("Point: %d", i);
+    for (int j=0;j<trajectory.multi_dof_joint_trajectory.points[i].transforms.size();j++){
+      ROS_INFO("x: %f", trajectory.multi_dof_joint_trajectory.points[i].transforms[j].translation.x);
+      ROS_INFO("y: %f", trajectory.multi_dof_joint_trajectory.points[i].transforms[j].translation.y);
+      ROS_INFO("z: %f", trajectory.multi_dof_joint_trajectory.points[i].transforms[j].translation.z);
+    }
+  }
+
+  
 }
 
-void Display::addAction(const ActionType & actionType)
-{
-  
+
+void Display::generateIntermediateWaypoints(){
+  plan();
+  // std::thread t2(plan);
+  // t2.join();
+}
+
   // const robot_state::RobotStateConstPtr & robotState = planning_display_->getQueryGoalState();
   // const Eigen::Affine3d & end_effector_state = robotState->getGlobalLinkTransform("body");
   // const Eigen::Affine3d & end_effector_state = planning_display_->getQueryGoalState()->getGlobalLinkTransform("body");
@@ -37,14 +139,14 @@ void Display::addAction(const ActionType & actionType)
   // end_effector_quaternion.normalize();
 
   // TODO CONSIDER BINDING
-  // moveit::core::RobotStatePtr robotState = move_group.getCurrentState();
+  // moveit::core::RobotStatePtr robotState = move_group->getCurrentState();
   // if (robotState == nullptr){
   //   ROS_ERROR("Could not get robot position from moveit. Cannot add actions.");
   // }
   // const Eigen::Affine3d & end_effector_state = robotState->getGlobalLinkTransform("body");
   // Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
   // end_effector_quaternion.normalize();
-  // geometry_msgs::Pose pose = move_group.getCurrentPose().pose;
+  // geometry_msgs::Pose pose = move_group->getCurrentPose().pose;
 
   // geometry_msgs::Pose pose;
   // pose.position.x = end_effector_state(0,3);
@@ -55,12 +157,14 @@ void Display::addAction(const ActionType & actionType)
   // pose.orientation.z = end_effector_quaternion.z();
   // pose.orientation.w = end_effector_quaternion.w();
 
-  // const geometry_msgs::PoseStamped current_state = move_group.getPoseTarget(END_EFFECTOR_LINK);
+  // const geometry_msgs::PoseStamped current_state = move_group->getPoseTarget(END_EFFECTOR_LINK);
   // const geometry_msgs::Pose pose(current_state.pose);
     
   // goalPositionSubscriber = nh_.subscribe<topic_tools::ShapeShifter>("/rviz_moveit_motion_planning_display/robot_interaction_interactive_marker_topic/update_full"
   // ,1 , &Display::goalPositionCallback, this);
 
+void Display::addAction(const ActionType & actionType)
+{
 
   addAction(actionType, getRobotPosition());
 
@@ -78,8 +182,8 @@ geometry_msgs::Pose Display::getRobotPosition(){
     const visualization_msgs::InteractiveMarkerInit::ConstPtr & markersInit = msg->instantiate<visualization_msgs::InteractiveMarkerInit>();
     
     for(size_t i = 0; i < markersInit->markers.size(); ++i) {
-              
-      if (markersInit->markers.at(i).name.compare("JJ:goal_body") == 0){ // JJ:start_body for starting position
+              // TODO URGENT: goal_base_link be able to change body etc (below, the str)
+      if (markersInit->markers.at(i).name.compare("JJ:goal_"+base_link) == 0){ // JJ:start_body for starting position
         pose.position.x = markersInit->markers.at(i).pose.position.x;
         pose.position.y = markersInit->markers.at(i).pose.position.y;
         pose.position.z = markersInit->markers.at(i).pose.position.z;
@@ -95,31 +199,6 @@ geometry_msgs::Pose Display::getRobotPosition(){
 
   return pose;
 }
-
-// void Display::goalPositionCallback(const topic_tools::ShapeShifter::ConstPtr& msg)
-// {
-//   if (msg->getDataType() == ros::message_traits::datatype<visualization_msgs::InteractiveMarkerInit>()) {
-//     visualization_msgs::InteractiveMarkerInit * markersInit = msg->instantiate<visualization_msgs::InteractiveMarkerInit>().get();
-    
-//     for(size_t i = 0; i < markersInit->markers.size(); ++i) {
-
-//     // for(auto && marker : markersInit->markers){
-//       // if (marker.ns.compare("JJ:start_body")){
-        
-//       // }
-              
-//       ROS_ERROR("new marker");
-//       //if (markersInit->markers.at(i).name.compare("JJ:goal_body")){
-//         ROS_ERROR("NEW POSE");
-//         // lastGoalPose = markersInit->markers.at(i).pose;
-//     // }
-//     }
-//   }
-//   else
-//   {
-//     ROS_ERROR("Unknown message type (%s) for goal position topic. Should be visualization_msgs/InteractiveMarkerInit.", msg->getDataType().c_str());
-//   }
-// }
 
 
 void Display::addAction(const ActionType & actionType, const double & x, const double & y, const double & z)

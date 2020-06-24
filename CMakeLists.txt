@@ -10,6 +10,7 @@ set(DEPENDENCIES
   visualization_msgs
   cmake_modules
   moveit_ros_planning_interface
+  moveit_visual_tools
 )
 
 find_package(catkin REQUIRED COMPONENTS ${DEPENDENCIES})
