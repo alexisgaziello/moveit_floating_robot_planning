@@ -6,6 +6,7 @@
 #include <tinyxml.h>
 
 
+
 namespace moveit_floating_robot_planning
 {
 
@@ -107,6 +108,15 @@ Display::Display(QWidget* parent)
     ROS_INFO("Could not get param '%s'. Taking default value as '%s'.", robot_group_param.c_str(), robot_group.c_str());
   }
 
+  const std::string waypoint_distance_param = "/move_group/ompl/maximum_waypoint_distance";
+  float waypoint_distance;
+  if (!nh_.getParam(waypoint_distance_param, waypoint_distance))
+  {
+    waypoint_distance = 0.5;
+    ROS_INFO("Could not get param '%s'. Taking default value as '%f'.", waypoint_distance_param.c_str(), waypoint_distance);
+    nh_.setParam(waypoint_distance_param, waypoint_distance);
+  }
+  
   // const std::string param_markerArrayTopic = "publish_topic_markersArray";
   // std::string markerArrayTopic = "occupied_cells_vis_array";
   // if (!nh_.getParam(param_markerArrayTopic, markerArrayTopic))
@@ -148,6 +158,11 @@ Display::Display(QWidget* parent)
   actionsPublisher_adv_ = nh_.advertise<visualization_msgs::Marker>(actionsPublisher_publishTopic_, 1000);
   trajectory_pub = nh_.advertise<moveit_msgs::DisplayTrajectory>(trajectory_topic, 10);
   octomapServer_ = new octomap_server::OctomapServer(nh_);
+
+  octomapsPlanningScene_subs_ = nh_.subscribe<topic_tools::ShapeShifter>("octomap_full", 10, &Display::octomapsPublisherHandleMessage, this);
+
+  octomapsMoveGroupPlanningScene_pub_ = nh_.advertise<moveit_msgs::PlanningScene>("move_group/monitored_planning_scene", 5);
+  octomapsPlanningScene_pub_ = nh_.advertise<moveit_msgs::PlanningScene>("planning_scene", 5);
 
 
   // Load all octomaps from resources/octomaps/

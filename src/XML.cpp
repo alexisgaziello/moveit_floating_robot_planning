@@ -11,10 +11,17 @@
 #include <rviz/view_controller.h>
 #include <rviz/window_manager_interface.h>
 
-#include <topic_tools/shape_shifter.h>
 #include <visualization_msgs/InteractiveMarkerInit.h>
 
 #include <tinyxml.h>
+
+// Moveit
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <moveit/planning_pipeline/planning_pipeline.h>
+#include <moveit/planning_interface/planning_interface.h>
+#include <moveit/kinematic_constraints/utils.h>
+// TODO CHECK INCLUDES
+#include <moveit_msgs/PlanningScene.h>
 
 namespace moveit_floating_robot_planning
 {
@@ -85,12 +92,19 @@ void Display::plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal, bool
   } 
 
   plan_.trajectory.push_back(my_plan.trajectory_);
-  
 
 }
 
 
+
+
 void Display::generateIntermediateWaypoints(){
+
+  if (actions_.size() < 2){
+    ROS_ERROR("To compute a trajectory, at least two actions must be defined.");
+    return;
+  }
+
   spinner.start();
 
   try {
@@ -104,20 +118,88 @@ void Display::generateIntermediateWaypoints(){
   move_group->setWorkspace(-100, -100, -100, 100, 100, 100);
 
 
-
   //trajectories_.clear();
-  if (actions_.size() < 2){
-    ROS_ERROR("To compute a trajectory, at least two actions must be defined.");
-  }
   for (int i=1; i<actions_.size();i++){
     plan(actions_[i-1].marker.pose, actions_[i].marker.pose, i==1);
   }
 
-  // std::thread t2(plan);
-  // t2.join();
   trajectory_pub.publish(plan_);
 
   delete move_group;
+  
+  /*
+
+  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+  robot_model::RobotModelPtr robot_model = robot_model_loader.getModel();
+
+  planning_scene::PlanningScenePtr planning_scene(new planning_scene::PlanningScene(robot_model));
+
+  planning_pipeline::PlanningPipelinePtr planning_pipeline(
+    new planning_pipeline::PlanningPipeline(robot_model, nh_, "planning_plugin", "request_adapters"));
+
+  planning_interface::MotionPlanRequest req;
+  req.group_name = robot_group;
+
+  planning_interface::MotionPlanResponse res;
+
+  robot_state::RobotState& start_state = planning_scene->getCurrentStateNonConst();
+  const robot_model::JointModelGroup* joint_model_group = start_state.getJointModelGroup(robot_group);
+  //robot_state.setJointGroupPositions(joint_model_group, response.trajectory.joint_trajectory.points.back().positions);
+
+  std::vector<double> joint_group_start(7);
+
+  joint_group_start[0] = actions_[0].marker.pose.position.x;
+  joint_group_start[1] = actions_[0].marker.pose.position.y;
+  joint_group_start[2] = actions_[0].marker.pose.position.z;
+  joint_group_start[3] = actions_[0].marker.pose.orientation.x;
+  joint_group_start[4] = actions_[0].marker.pose.orientation.y;
+  joint_group_start[5] = actions_[0].marker.pose.orientation.z;
+  joint_group_start[6] = actions_[0].marker.pose.orientation.w;
+
+  start_state.setJointGroupPositions(robot_group, joint_group_start);
+  //move_group->setStartState(start_state);
+  planning_scene->setCurrentState(start_state);
+
+
+  for (int i=1; i<actions_.size();i++){
+    robot_state::RobotState goal_state(robot_model);
+
+    std::vector<double> joint_values(7);
+    joint_values[0] = actions_[i].marker.pose.position.x;
+    joint_values[1] = actions_[i].marker.pose.position.y;
+    joint_values[2] = actions_[i].marker.pose.position.z;
+    joint_values[3] = actions_[i].marker.pose.orientation.x;
+    joint_values[4] = actions_[i].marker.pose.orientation.y;
+    joint_values[5] = actions_[i].marker.pose.orientation.z;
+    joint_values[6] = actions_[i].marker.pose.orientation.w;
+
+    goal_state.setJointGroupPositions(joint_model_group, joint_values);
+    
+    moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
+    req.goal_constraints.push_back(joint_goal);
+    break;
+  }
+
+  planning_pipeline->generatePlan(planning_scene, req, res);
+  // Check that the planning was successful
+  if (res.error_code_.val != res.error_code_.SUCCESS)
+  {
+    ROS_ERROR("Could not compute plan successfully");
+    return;
+  }
+
+  // Visualize the trajectory
+  ROS_INFO("Visualizing the trajectory");
+  moveit_msgs::MotionPlanResponse response;
+  res.getMessage(response);
+
+  plan_.trajectory_start = response.trajectory_start;
+  plan_.trajectory.push_back(response.trajectory);
+
+  trajectory_pub.publish(plan_);*/
+
+  // delete planning_scene;
+  // delete planning_pipeline;
 
   spinner.stop();
 
@@ -508,14 +590,16 @@ void Display::exportXMLButtonClicked()
     stream << "  </task>\n";
 
     // Intermediate waypoints
-    for (int j=0; j<plan_.trajectory[i].multi_dof_joint_trajectory.points.size(); j++){
-      stream << "	 <task description=\"GENERATED_WAYPOINT\">\n";
-      stream << "    <point>\n";
-      stream << "      <x>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.x) << "</x>\n";
-      stream << "      <y>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.y) << "</y>\n";
-      stream << "      <z>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.z) << "</z>\n";
-      stream << "    </point>\n";
-      stream << "  </task>\n";
+    if (plan_.trajectory.size()>0){
+      for (int j=0; j<plan_.trajectory[i].multi_dof_joint_trajectory.points.size(); j++){
+        stream << "	 <task description=\"GENERATED_WAYPOINT\">\n";
+        stream << "    <point>\n";
+        stream << "      <x>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.x) << "</x>\n";
+        stream << "      <y>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.y) << "</y>\n";
+        stream << "      <z>" << std::to_string(plan_.trajectory[i].multi_dof_joint_trajectory.points[j].transforms[0].translation.z) << "</z>\n";
+        stream << "    </point>\n";
+        stream << "  </task>\n";
+      }
     }
   }
 

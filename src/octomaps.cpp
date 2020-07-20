@@ -35,6 +35,35 @@ void Display::loadOctomapButtonClicked()
   }
 }
 
+void Display::octomapsPublisherHandleMessage(const topic_tools::ShapeShifter::ConstPtr& msg)
+{
+  if (!(msg->getDataType() == ros::message_traits::datatype<octomap_msgs::Octomap>()))
+  {
+    ROS_ERROR("Unknown octomap message type: %s", msg->getDataType().c_str());
+    return;
+  } //else
+
+  publishToPlanningScene(*(msg->instantiate<octomap_msgs::Octomap>()));
+}
+
+void Display::publishToPlanningScene(const octomap_msgs::Octomap & msg){
+
+  moveit_msgs::PlanningSceneWorld planningSceneWorld = moveit_msgs::PlanningSceneWorld();
+  planningSceneWorld.octomap.header.stamp = ros::Time::now();
+  planningSceneWorld.octomap.header.frame_id = frame_id_;
+  planningSceneWorld.octomap.octomap = msg;
+
+  planningSceneWorld.octomap.origin.position.x = 0;
+  planningSceneWorld.octomap.origin.orientation.w = 1;
+
+  moveit_msgs::PlanningScene planningScene = moveit_msgs::PlanningScene();
+  planningScene.world = planningSceneWorld;
+  planningScene.is_diff = true;
+
+  octomapsMoveGroupPlanningScene_pub_.publish(planningScene);
+  octomapsPlanningScene_pub_.publish(planningScene);
+}
+
 bool Display::loadOctomap(const QString & filePath, const bool & publish)
 {
   // If someday it was compiled in windows.

@@ -11,6 +11,7 @@ set(DEPENDENCIES
   cmake_modules
   moveit_ros_planning_interface
   moveit_visual_tools
+  topic_tools
 )
 
 find_package(catkin REQUIRED COMPONENTS ${DEPENDENCIES})

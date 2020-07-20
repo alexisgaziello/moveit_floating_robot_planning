@@ -14,6 +14,8 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <octomap_server/OctomapServer.h>
+#include <topic_tools/shape_shifter.h>
+
 
 // Riz
 #include <rviz/panel.h>
@@ -112,6 +114,9 @@ private:
 
   ros::NodeHandle nh_;
 
+  // TODO get
+  std::string frame_id_ = "world_ned";
+
   moveit::planning_interface::MoveGroupInterface * move_group;
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
 
@@ -119,9 +124,6 @@ private:
   std::vector<ActionType> actionTypes;
   std::vector<Action> actions_;
   moveit_msgs::DisplayTrajectory plan_;
-
-void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal, bool CREATE_TRAJECTORY=false);
-
 
   ros::AsyncSpinner spinner;
 
@@ -154,6 +156,8 @@ void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal, bool CREATE_T
 
   void publishAction(const Action &);
 
+  void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal, bool CREATE_TRAJECTORY=false);
+
   //Octomaps tab
   bool loadOctomap(const QString &, const bool & publish = true);
   QStandardItemModel * octomaps_model_;
@@ -161,6 +165,12 @@ void plan(geometry_msgs::Pose & start, geometry_msgs::Pose & goal, bool CREATE_T
   void publishSelectedOctomap(const std::string &);
 
   octomap_server::OctomapServer * octomapServer_;
+
+  void octomapsPublisherHandleMessage(const topic_tools::ShapeShifter::ConstPtr& msg);
+  void publishToPlanningScene(const octomap_msgs::Octomap & msg);
+  ros::Subscriber octomapsPlanningScene_subs_;
+  ros::Publisher octomapsPlanningScene_pub_;
+  ros::Publisher octomapsMoveGroupPlanningScene_pub_;
 
   //Helpers
 
