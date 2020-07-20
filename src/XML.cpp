@@ -115,7 +115,35 @@ void Display::generateIntermediateWaypoints(){
   }
 
   // Set workspace
-  move_group->setWorkspace(-100, -100, -100, 100, 100, 100);
+  float minX = actions_[0].marker.pose.position.x;
+  float minY = actions_[0].marker.pose.position.y;
+  float minZ = actions_[0].marker.pose.position.z;
+  float maxX = actions_[0].marker.pose.position.x;
+  float maxY = actions_[0].marker.pose.position.y;
+  float maxZ = actions_[0].marker.pose.position.z;
+
+  for (int i=1; i<actions_.size(); i++){
+    if (actions_[i].marker.pose.position.x < minX) {
+      minX = actions_[i].marker.pose.position.x;
+    }
+    if (actions_[i].marker.pose.position.y < minY) {
+      minY = actions_[i].marker.pose.position.y;
+    }
+    if (actions_[i].marker.pose.position.z < minZ) {
+      minZ = actions_[i].marker.pose.position.z;
+    }
+    if (actions_[i].marker.pose.position.x > maxX) {
+      maxX = actions_[i].marker.pose.position.x;
+    }
+    if (actions_[i].marker.pose.position.y > maxY) {
+      maxY = actions_[i].marker.pose.position.y;
+    }
+    if (actions_[i].marker.pose.position.z > maxZ) {
+      maxZ = actions_[i].marker.pose.position.z;
+    }    
+  }
+
+  move_group->setWorkspace(minX-3, minY-3, minZ-3, maxX+3, maxY+3, maxZ+3);
 
 
   //trajectories_.clear();
@@ -590,7 +618,7 @@ void Display::exportXMLButtonClicked()
     stream << "  </task>\n";
 
     // Intermediate waypoints
-    if (plan_.trajectory.size()>0){
+    if (plan_.trajectory.size()>0 && i<(actions_.size()-1)){
       for (int j=0; j<plan_.trajectory[i].multi_dof_joint_trajectory.points.size(); j++){
         stream << "	 <task description=\"GENERATED_WAYPOINT\">\n";
         stream << "    <point>\n";
@@ -602,6 +630,7 @@ void Display::exportXMLButtonClicked()
       }
     }
   }
+
 
   // Add any other text from append.xml
   std::ifstream appendFile;
@@ -653,7 +682,8 @@ void Display::exportXMLButtonClicked()
   file.open (missionSavePath);
   file << stream.str();
   file.close();
-
+  
+  ROS_INFO("Succesfully exported mission to: %s", missionSavePath.c_str());
 }
 
 // Function to initialize the table
