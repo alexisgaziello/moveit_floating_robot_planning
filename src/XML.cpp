@@ -143,6 +143,30 @@ void Display::generateIntermediateWaypoints(){
     }    
   }
 
+  // Minimum of 50m x 50m x 50m
+  float diff;
+  // X
+  diff = maxX - minX;
+  if (diff < 50){
+    diff = 50-diff;
+    maxX = maxX + diff/2;
+    minX = minX - diff/2;
+  }
+  // Y
+  diff = maxY - minY;
+  if (diff < 50){
+    diff = 50-diff;
+    maxY = maxY + diff/2;
+    minY = minY - diff/2;
+  }
+  // Z
+  diff = maxY - minY;
+  if (diff < 50){
+    diff = 50-diff;
+    maxY = maxY + diff/2;
+    minY = minY - diff/2;
+  }
+
   move_group->setWorkspace(minX-3, minY-3, minZ-3, maxX+3, maxY+3, maxZ+3);
 
 
@@ -233,36 +257,6 @@ void Display::generateIntermediateWaypoints(){
 
 }
 
-  // const robot_state::RobotStateConstPtr & robotState = planning_display_->getQueryGoalState();
-  // const Eigen::Affine3d & end_effector_state = robotState->getGlobalLinkTransform("body");
-  // const Eigen::Affine3d & end_effector_state = planning_display_->getQueryGoalState()->getGlobalLinkTransform("body");
-  // Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
-  // end_effector_quaternion.normalize();
-
-  // TODO CONSIDER BINDING
-  // moveit::core::RobotStatePtr robotState = move_group->getCurrentState();
-  // if (robotState == nullptr){
-  //   ROS_ERROR("Could not get robot position from moveit. Cannot add actions.");
-  // }
-  // const Eigen::Affine3d & end_effector_state = robotState->getGlobalLinkTransform("body");
-  // Eigen::Quaterniond end_effector_quaternion(end_effector_state.linear());
-  // end_effector_quaternion.normalize();
-  // geometry_msgs::Pose pose = move_group->getCurrentPose().pose;
-
-  // geometry_msgs::Pose pose;
-  // pose.position.x = end_effector_state(0,3);
-  // pose.position.y = end_effector_state(1,3);
-  // pose.position.z = end_effector_state(2,3);
-  // pose.orientation.x = end_effector_quaternion.x();
-  // pose.orientation.y = end_effector_quaternion.y();
-  // pose.orientation.z = end_effector_quaternion.z();
-  // pose.orientation.w = end_effector_quaternion.w();
-
-  // const geometry_msgs::PoseStamped current_state = move_group->getPoseTarget(END_EFFECTOR_LINK);
-  // const geometry_msgs::Pose pose(current_state.pose);
-    
-  // goalPositionSubscriber = nh_.subscribe<topic_tools::ShapeShifter>("/rviz_moveit_motion_planning_display/robot_interaction_interactive_marker_topic/update_full"
-  // ,1 , &Display::goalPositionCallback, this);
 
 void Display::addAction(const ActionType & actionType)
 {
