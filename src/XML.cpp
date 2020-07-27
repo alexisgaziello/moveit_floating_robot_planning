@@ -1,6 +1,7 @@
 
 #include <moveit_floating_robot_planning/display.h>
 
+#include <stdlib.h>
 #include <fstream>
 #include <sstream>
 
@@ -147,26 +148,26 @@ void Display::generateIntermediateWaypoints(){
   float diff;
   // X
   diff = maxX - minX;
-  if (diff < 50){
+  if (fabs(diff) < 50){
     diff = 50-diff;
     maxX = maxX + diff/2;
     minX = minX - diff/2;
   }
   // Y
   diff = maxY - minY;
-  if (diff < 50){
+  if (fabs(diff) < 50){
     diff = 50-diff;
     maxY = maxY + diff/2;
     minY = minY - diff/2;
   }
   // Z
-  diff = maxY - minY;
-  if (diff < 50){
+  diff = maxZ - minZ;
+  if (fabs(diff) < 50){
     diff = 50-diff;
-    maxY = maxY + diff/2;
-    minY = minY - diff/2;
+    maxZ = maxZ + diff/2;
+    minZ = minZ - diff/2;
   }
-
+  
   move_group->setWorkspace(minX-3, minY-3, minZ-3, maxX+3, maxY+3, maxZ+3);
 
 
