@@ -1,3 +1,18 @@
+# moveit_floating_robot_planning
+Plugin for RVIZ and MoveIt for underwater ROV mission planning.
+
+## Description
+
+This plugin is part of the UNEXMIN project and aims to ease mission planning for underwater automonus submarines.
+
+GUI features:
+- Add/modify robot actions
+- Automatic waypoints generations with colision checking.
+- Export and import of UNEXMIN formated missions 
+- Ability to load environments (octomap format)
+
+## Installation 
+
 1. Add required packages: https://drive.google.com/file/d/1tqglZlt11jMm5FY875d0x9670OkPI268/view?usp=sharing
 The packages are: the unexmin description for the robot mesh, the moveit unexmin config package, the moveit package, and some packages for publishing octomaps.
 
